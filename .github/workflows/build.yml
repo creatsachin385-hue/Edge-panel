@@ -15,7 +15,7 @@ jobs:
           if [ ! -f "build.gradle.kts" ]; then
             SUBDIR=$(find . -maxdepth 2 -name "build.gradle.kts" -exec dirname {} \; | head -n 1)
             if [ -n "$SUBDIR" ] && [ "$SUBDIR" != "." ]; then
-              echo "Moving files from $SUBDIR to root..."
+              echo "Moving extracted files from $SUBDIR to root..."
               cp -r "$SUBDIR"/* .
             fi
           fi
@@ -26,13 +26,19 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Gradle 8.4
+      - name: Setup Gradle 8.4 (Cache Disabled)
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.4'
+          cache-disabled: true
+
+      - name: Accept Android Licenses & local.properties
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       - name: Build Debug APK
-        run: gradle assembleDebug --no-daemon --stacktrace
+        run: gradle assembleDebug --no-daemon --no-build-cache --stacktrace
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
